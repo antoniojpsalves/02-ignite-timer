@@ -30,7 +30,7 @@ export const FormContainer = styled.div`
   flex-wrap: wrap;
 `
 
-export const CountDownContainer = styled.div`
+export const CountdownContainer = styled.div`
   font-family: 'Roboto Mono', monospace;
   font-size: 10rem;
   font-weight: 8rem;
