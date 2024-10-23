@@ -53,12 +53,18 @@ export function Home() {
 
   useEffect(() => {
 
+    let interval: number
+
     if (activeCycle) {
-      setInterval(() => {
+      interval = setInterval(() => {
         setAmountSecondsPassed(
           differenceInSeconds(new Date(), activeCycle.startDate)
         )
       }, 1000)
+    }
+
+    return () => {
+      clearInterval(interval)
     }
 
   }, [activeCycle])
@@ -78,6 +84,7 @@ export function Home() {
     // Sempre que o estado depender do estado anterior, usar clousure!
     setCycles(state => [...state, newCycle])
     setActiveCycleId(cycleId)
+    setAmountSecondsPassed(0)
 
     // console.log(data)
     reset()
