@@ -35,6 +35,7 @@ interface Cycle {
   minutesAmount: number
   startDate: Date
   interruptedDate?: Date
+  finishedDate?: Date
 }
 
 export function Home() {
@@ -50,26 +51,6 @@ export function Home() {
       minutesAmount: 0,
     },
   })
-
-  const activeCycle = cycles.find(cycle => cycle.id === activeCycleId)
-
-  useEffect(() => {
-
-    let interval: number
-
-    if (activeCycle) {
-      interval = setInterval(() => {
-        setAmountSecondsPassed(
-          differenceInSeconds(new Date(), activeCycle.startDate)
-        )
-      }, 1000)
-    }
-
-    return () => {
-      clearInterval(interval)
-    }
-
-  }, [activeCycle])
 
   function handleCreateNewCycle(data: NewCycleFormData) {
 
@@ -106,6 +87,8 @@ export function Home() {
     setActiveCycleId(null)
   }
 
+  const activeCycle = cycles.find(cycle => cycle.id === activeCycleId)
+
   const totalSeconds = activeCycle ? activeCycle.minutesAmount * 60 : 0
   const currentSeconds = activeCycle ? totalSeconds - amoutSecondsPassed : 0
 
@@ -114,6 +97,42 @@ export function Home() {
 
   const minutes = String(minutesAmount).padStart(2, '0')
   const seconds = String(secondsAmount).padStart(2, '0')
+
+
+  useEffect(() => {
+
+    let interval: number
+
+    if (activeCycle) {
+      interval = setInterval(() => {
+
+        const secondsDifference = differenceInSeconds(new Date(), activeCycle.startDate)
+
+        if (secondsDifference >= totalSeconds) {
+          setCycles(state =>
+            state.map(cycle => {
+              if (cycle.id === activeCycleId) {
+                return { ...cycle, finishedDate: new Date() }
+              }
+              return cycle
+            })
+          )
+          setAmountSecondsPassed(totalSeconds)
+          clearInterval(interval)
+          return
+        }
+
+        setAmountSecondsPassed(
+          secondsDifference
+        )
+      }, 1000)
+    }
+
+    return () => {
+      clearInterval(interval)
+    }
+
+  }, [activeCycle, totalSeconds, activeCycleId])
 
   useEffect(() => {
     if (activeCycle) {
