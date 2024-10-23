@@ -36,7 +36,9 @@ interface Cycle {
 interface CyclesContextProps {
   activeCycle: Cycle | undefined
   activeCycleId: string | null
+  amountSecondsPassed: number
   markCurrentCycleAsFinished: () => void
+  setSecondsPassed: (seconds: number) => void
 
 }
 
@@ -46,6 +48,7 @@ export function Home() {
 
   const [cycles, setCycles] = useState<Cycle[]>([])
   const [activeCycleId, setActiveCycleId] = useState<string | null>(null)
+  const [amountSecondsPassed, setAmountSecondsPassed] = useState(0)
 
   const newCycleForm = useForm<NewCycleFormData>({
     resolver: zodResolver(newCycleFormValidationSchema),
@@ -72,7 +75,7 @@ export function Home() {
     // Sempre que o estado depender do estado anterior, usar clousure!
     setCycles(state => [...state, newCycle])
     setActiveCycleId(cycleId)
-    // setAmountSecondsPassed(0)
+    setAmountSecondsPassed(0)
 
     // console.log(data)
     reset()
@@ -90,6 +93,10 @@ export function Home() {
     )
 
     setActiveCycleId(null)
+  }
+
+  function setSecondsPassed(seconds: number) {
+    setAmountSecondsPassed(seconds)
   }
 
   function markCurrentCycleAsFinished() {
@@ -117,7 +124,9 @@ export function Home() {
         <CyclesContext.Provider value={{
           activeCycle,
           activeCycleId,
-          markCurrentCycleAsFinished
+          amountSecondsPassed,
+          markCurrentCycleAsFinished,
+          setSecondsPassed
         }}>
 
           <FormProvider {...newCycleForm}>
@@ -126,7 +135,6 @@ export function Home() {
 
           <Countdown />
         </CyclesContext.Provider>
-
 
         {
           activeCycle ? (
