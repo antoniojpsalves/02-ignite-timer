@@ -1,4 +1,4 @@
-import { createContext, ReactNode, useState } from "react"
+import { createContext, ReactNode, useReducer, useState } from "react"
 
 interface Cycle {
   id: string
@@ -25,17 +25,72 @@ interface CreateNewCycleData {
   minutesAmount: number
 }
 
+export const CyclesContext = createContext({} as CyclesContextProps)
+
 interface CyclesContextProviderProps {
   children: ReactNode
 }
 
-export const CyclesContext = createContext({} as CyclesContextProps)
+interface CyclesState {
+  cycles: Cycle[]
+  activeCycleId: string | null
+}
 
 export function CyclesContextProvider({ children }: CyclesContextProviderProps) {
 
-  const [cycles, setCycles] = useState<Cycle[]>([])
-  const [activeCycleId, setActiveCycleId] = useState<string | null>(null)
+  // const [cycles, setCycles] = useState<Cycle[]>([])
+
+
+  //Atualizando os cycles para serem usados com reducer
+  const [cyclesState, dispatch] = useReducer((state: CyclesState, action: any) => {
+
+    console.log(state)
+    console.log(action)
+
+    if (action.type === 'ADD_NEW_CYCLE') {
+      // Adicionando o novo cyclo no array de ciclos e definindo o activeCycleID
+      return {
+        ...state,
+        cycles: [...state.cycles, action.payload.newCycle],
+        activeCycleId: action.payload.newCycle.id
+      }
+    }
+
+    if (action.type === 'INTERRUPT_CURRENT_CYCLE') {
+      return {
+        ...state,
+        cycles: state.cycles.map(cycle => {
+          if (cycle.id === state.activeCycleId) {
+            return { ...cycle, interruptedDate: new Date() }
+          }
+          return cycle
+        }),
+        activeCycleId: null
+      }
+    }
+
+    if (action.type === 'INTERRUPT_CURRENT_CYCLE') {
+      return {
+        ...state,
+        cycles: state.cycles.map(cycle => {
+          if (cycle.id === state.activeCycleId) {
+            return { ...cycle, finishedDate: new Date() }
+          }
+          return cycle
+        }),
+        activeCycleId: null
+      }
+    }
+
+    return state
+  }, {
+    cycles: [],
+    activeCycleId: null
+  })
+
   const [amountSecondsPassed, setAmountSecondsPassed] = useState(0)
+
+  const { cycles, activeCycleId } = cyclesState
 
   const activeCycle = cycles.find(cycle => cycle.id === activeCycleId)
 
@@ -44,21 +99,27 @@ export function CyclesContextProvider({ children }: CyclesContextProviderProps) 
   }
 
   function markCurrentCycleAsFinished() {
-    setCycles(state =>
-      state.map(cycle => {
-        if (cycle.id === activeCycleId) {
-          return { ...cycle, finishedDate: new Date() }
-        }
-        return cycle
-      })
-    )
+    // setCycles(state =>
+    //   state.map(cycle => {
+    //     if (cycle.id === activeCycleId) {
+    //       return { ...cycle, finishedDate: new Date() }
+    //     }
+    //     return cycle
+    //   })
+    // )
+
+    dispatch({
+      type: 'MARK_CURRENT_CYCLE_AS_FINISHED',
+      payload: {
+        activeCycleId
+      }
+    })
   }
 
   function createNewCycle(data: CreateNewCycleData) {
 
     const cycleId = String(new Date().getTime())
 
-    //Criar novo ciclo
     const newCycle: Cycle = {
       id: cycleId,
       task: data.task,
@@ -67,27 +128,29 @@ export function CyclesContextProvider({ children }: CyclesContextProviderProps) 
     }
 
     // Sempre que o estado depender do estado anterior, usar clousure!
-    setCycles(state => [...state, newCycle])
-    setActiveCycleId(cycleId)
+    // setCycles(state => [...state, newCycle])
+
+    dispatch({
+      type: 'ADD_NEW_CYCLE',
+      payload: {
+        newCycle
+      }
+    })
+
     setAmountSecondsPassed(0)
 
-    // console.log(data)
-
-    // reset()
   }
 
   function interruptCurrentCycle() {
 
-    setCycles(
-      cycles.map(cycle => {
-        if (cycle.id === activeCycleId) {
-          return { ...cycle, interruptedDate: new Date() }
-        }
-        return cycle
-      })
-    )
+    dispatch({
+      type: 'INTERRUPT_CURRENT_CYCLE',
+      payload: {
+        activeCycleId
+      }
+    })
 
-    setActiveCycleId(null)
+    // setActiveCycleId(null)
   }
 
   return (
