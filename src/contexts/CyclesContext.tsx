@@ -69,7 +69,7 @@ export function CyclesContextProvider({ children }: CyclesContextProviderProps) 
       }
     }
 
-    if (action.type === 'INTERRUPT_CURRENT_CYCLE') {
+    if (action.type === 'MARK_CURRENT_CYCLE_AS_FINISHED') {
       return {
         ...state,
         cycles: state.cycles.map(cycle => {
@@ -99,14 +99,6 @@ export function CyclesContextProvider({ children }: CyclesContextProviderProps) 
   }
 
   function markCurrentCycleAsFinished() {
-    // setCycles(state =>
-    //   state.map(cycle => {
-    //     if (cycle.id === activeCycleId) {
-    //       return { ...cycle, finishedDate: new Date() }
-    //     }
-    //     return cycle
-    //   })
-    // )
 
     dispatch({
       type: 'MARK_CURRENT_CYCLE_AS_FINISHED',
