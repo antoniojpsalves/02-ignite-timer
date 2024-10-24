@@ -1,13 +1,7 @@
-import { createContext, ReactNode, useReducer, useState } from "react"
-
-interface Cycle {
-  id: string
-  task: string
-  minutesAmount: number
-  startDate: Date
-  interruptedDate?: Date
-  finishedDate?: Date
-}
+import { createContext, ReactNode, useEffect, useReducer, useState } from "react"
+import { Cycle, cyclesReducer } from "../reducers/cycles/reducer"
+import { addNewCycleAction, interruptCurrentCycleAction, markCurrentCycleAsFinishedAction } from "../reducers/cycles/actions"
+import { differenceInSeconds } from "date-fns"
 
 interface CyclesContextProps {
   cycles: Cycle[]
@@ -31,72 +25,49 @@ interface CyclesContextProviderProps {
   children: ReactNode
 }
 
-interface CyclesState {
-  cycles: Cycle[]
-  activeCycleId: string | null
-}
-
-
 export function CyclesContextProvider({ children }: CyclesContextProviderProps) {
 
   //Atualizando os cycles para serem usados com reducer
-  const [cyclesState, dispatch] = useReducer((state: CyclesState, action: any) => {
-
-    switch (action.type) {
-      case 'ADD_NEW_CYCLE':
-        return {
-          ...state,
-          cycles: [...state.cycles, action.payload.newCycle],
-          activeCycleId: action.payload.newCycle.id
-        }
-      case 'INTERRUPT_CURRENT_CYCLE':
-        return {
-          ...state,
-          cycles: state.cycles.map(cycle => {
-            if (cycle.id === state.activeCycleId) {
-              return { ...cycle, interruptedDate: new Date() }
-            }
-            return cycle
-          }),
-          activeCycleId: null
-        }
-      case 'MARK_CURRENT_CYCLE_AS_FINISHED':
-        return {
-          ...state,
-          cycles: state.cycles.map(cycle => {
-            if (cycle.id === state.activeCycleId) {
-              return { ...cycle, finishedDate: new Date() }
-            }
-            return cycle
-          }),
-          activeCycleId: null
-        }
-      default:
-        return state
-    }
-  }, {
+  const [cyclesState, dispatch] = useReducer(cyclesReducer, {
     cycles: [],
     activeCycleId: null
-  })
+  }, (initialState) => {
+    const storedState = localStorage.getItem('@ignite-timer:cycles-state-1.0.0')
+    if (storedState)
+      return JSON.parse(storedState)
 
-  const [amountSecondsPassed, setAmountSecondsPassed] = useState(0)
+    return initialState
+  })
 
   const { cycles, activeCycleId } = cyclesState
 
   const activeCycle = cycles.find(cycle => cycle.id === activeCycleId)
+
+  // Caso o cara der F5 na página, continuar o contador de onde deveria
+  const [amountSecondsPassed, setAmountSecondsPassed] = useState(() => {
+    if (activeCycle) {
+      return differenceInSeconds(new Date(), new Date(activeCycle.startDate))
+    }
+    return 0
+  })
+
+  useEffect(() => {
+    const stateJSON = JSON.stringify(cyclesState)
+    /**
+     * 1: identificar a aplicação que está fazendo o uso do localstorage
+     * 2: indicar a versão do localstorage para evitar bugs em produção em caso de mudança de valores
+     */
+    localStorage.setItem('@ignite-timer:cycles-state-1.0.0', stateJSON)
+  }, [cyclesState])
+
+
 
   function setSecondsPassed(seconds: number) {
     setAmountSecondsPassed(seconds)
   }
 
   function markCurrentCycleAsFinished() {
-
-    dispatch({
-      type: 'MARK_CURRENT_CYCLE_AS_FINISHED',
-      payload: {
-        activeCycleId
-      }
-    })
+    dispatch(markCurrentCycleAsFinishedAction())
   }
 
   function createNewCycle(data: CreateNewCycleData) {
@@ -113,26 +84,14 @@ export function CyclesContextProvider({ children }: CyclesContextProviderProps) 
     // Sempre que o estado depender do estado anterior, usar clousure!
     // setCycles(state => [...state, newCycle])
 
-    dispatch({
-      type: 'ADD_NEW_CYCLE',
-      payload: {
-        newCycle
-      }
-    })
+    dispatch(addNewCycleAction(newCycle))
 
     setAmountSecondsPassed(0)
 
   }
 
   function interruptCurrentCycle() {
-
-    dispatch({
-      type: 'INTERRUPT_CURRENT_CYCLE',
-      payload: {
-        activeCycleId
-      }
-    })
-
+    dispatch(interruptCurrentCycleAction())
   }
 
   return (
